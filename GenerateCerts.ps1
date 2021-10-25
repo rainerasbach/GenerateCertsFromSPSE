@@ -200,6 +200,21 @@ if (!($OldCert) -and $renew)
     return
 }
 
+#region PSPKI
+log "Validating pspki PowerShell module"
+
+# install / import pspki module 
+if (( get-module -ListAvailable | ? {$_.name -match "pspki"}) -eq $null) 
+{
+    log "Installing module PSPKI" Yellow
+    install-module pspki
+}
+
+log "importing pspki PowerShell module"
+
+Import-Module pspki
+#endregion #PSPKI
+
 #region TestCAAccess
 #Connect to CA
 log "Connecting to CA $caname"
@@ -237,20 +252,7 @@ If ($members -contains $user) {
 $certRequestFileName = Join-Path $env:temp "$FriendlyName.txt"
 $cerFileName = Join-Path  $env:temp "$FriendlyName.cer"
 
-#region PSPKI
-log "Validating pspki PowerShell module"
 
-# install / import pspki module 
-if (( get-module -ListAvailable | ? {$_.name -match "pspki"}) -eq $null) 
-{
-    log "Installing module PSPKI" Yellow
-    install-module pspki
-}
-
-log "importing pspki PowerShell module"
-
-Import-Module pspki
-#endregion #PSPKI
 
 #region SPDefaultCertSettings
 log "getting default cert Settings from SharePoint"
