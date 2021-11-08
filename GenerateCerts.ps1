@@ -59,102 +59,167 @@
 .PARAMETER Help
     Shows examples 
 .Developed by Rainer Asbach
-.LAST UPDATED
+.UPDATE
     2021-10-23 by RainerA
+.UPDATE
+    2021-11-08 by RainerA
+    Make parameter ServerCertFileFolder optional
+    Splatting for Parameters of New-SPCertificate
+    Improved ParameterSets RCA/ECC/RenewRSA/RenewECC
 #>
-Param(
+ [CmdletBinding(DefaultParameterSetName = 'RSA')]
+ Param(
     [Alias("CertName")]
-    [Parameter(ParameterSetName="Run",Position=0,Mandatory=$true, HelpMessage="Name of the Certificate to be issued (ie. sni2")]
+    [Parameter(ParameterSetName = 'RSA',Position=0,Mandatory=$true, HelpMessage="Name of the Certificate to be issued (ie. sni2")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
+    [Parameter(ParameterSetName = 'Export')]
     [ValidateNotNullOrEmpty()]
     [string] $FriendlyName,
     
     [Alias ("CertCommonName")]
-    [Parameter(ParameterSetName="Run",Position=1,Mandatory=$true, HelpMessage="Common Name of the Certificate to be issued (ie. sni2.contoso.com")]
+    [Parameter(ParameterSetName = 'RSA',Position=1,Mandatory=$true, HelpMessage="Common Name of the Certificate to be issued (ie. sni2.contoso.com")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [ValidateNotNullOrEmpty()]
     [string] $CommonName,
     
     [Alias ("Share","SF")]  #left in for compatibitly with training doc, but no longer used
-    [Parameter(ParameterSetName="Run",Position=2,Mandatory=$true, HelpMessage="FileShare on the Certificate Authority Server that is used to share the Certificate request and the .cer file (\\dc\labfiles\certs)")]
-    [ValidateNotNullOrEmpty()]
+    [Parameter(ParameterSetName = 'RSA',Position=2,Mandatory=$false, HelpMessage="FileShare on the Certificate Authority Server that is used to share the Certificate request and the .cer file (\\dc\labfiles\certs)")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [string] $ServerCertFileFolder= "",
     
     [Alias("Overwrite","Clobber")]
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="Overwrites existing Certificate Request files")]
+    [Parameter(ParameterSetName = 'RSA',Mandatory=$false, HelpMessage="Overwrites existing Certificate Request files")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [switch] $force,
 
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="[Optional] Name of the Certification Authority. If omitted, the default of the domain will be used (contoso-dc-CA)")]
+    [Parameter(ParameterSetName = 'RSA',Mandatory=$false, HelpMessage="[Optional] Name of the Certification Authority. If omitted, the default of the domain will be used (contoso-dc-CA)")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [string] $caName,
 
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="[Optional] Number of days the certificate is valid. If omitted, the default of the Certification Authority will be used. (5) ")]
+    [Parameter(ParameterSetName = 'RSA',Mandatory=$false, HelpMessage="[Optional] Number of days the certificate is valid. If omitted, the default of the Certification Authority will be used. (5) ")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [int] $CertificateValidDays,
 
     [Alias ("SAN")]
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="Comma separated list of Certificate Alternate names (sp.contoso.com,sps.contoso.com,portal.contoso.com' ")]
+    [Parameter(ParameterSetName = 'RSA',Mandatory=$false, HelpMessage="Comma separated list of Certificate Alternate names (sp.contoso.com,sps.contoso.com,portal.contoso.com' ")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [string] $AlternativeNames ="",
 
     [Alias("PWD")]
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="Certificate Password ")]
+    [Parameter(ParameterSetName = 'Export',Mandatory=$false, HelpMessage="Certificate Password ")]
+    [Parameter(ParameterSetName = 'RSA')]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [string] $Password ="",
 
     [Alias("CertStore")]
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="Certifcate store (Options: [EndEntity|Intermediate|Root|Pending]  Default:EndEntity ")]
+    [Parameter(ParameterSetName = 'RSA',Mandatory=$false, HelpMessage="Certifcate store (Options: [EndEntity|Intermediate|Root|Pending]  Default:EndEntity ")]
+    [Parameter(ParameterSetName = 'ECC')]
     [ValidateSet("EndEntity", "Intermediate", "Root" , "Pending")]   
     [string] $Store= "EndEntity",
 
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="Certificate is Exportable (`$true)")]
-    [switch] $Exportable =$true ,
+    [Parameter(ParameterSetName = 'RSA',Mandatory=$false, HelpMessage="Certificate is Exportable (`$true)")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
+    [switch] $Exportable =$false ,
 
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="Creates and processes a Certificate request to renew an existing certificate instead of adding a new certificate ")]
+    [Parameter(ParameterSetName = 'RenewRSA',Mandatory=$false, HelpMessage="Creates and processes a Certificate request to renew an existing certificate instead of adding a new certificate ")]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [switch] $renew =$false,
         
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="Replace an existing certificate instead of adding a new certificate ")]
+    [Parameter(ParameterSetName = 'RSA',Mandatory=$false, HelpMessage="Replace an existing certificate instead of adding a new certificate ")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [switch] $replace =$false,
         
     [Alias("OU")]
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="OU of the Certificate Issuer (Default: SharePoint Default Setting) ")]
+    [Parameter(ParameterSetName = 'RSA',Mandatory=$false, HelpMessage="OU of the Certificate Issuer (Default: SharePoint Default Setting) ")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [string] $OrganizationalUnit= "",
 
     [Alias("Org","Company")]
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="Organization of the Certificate Issuer (Default: SharePoint Default Setting)  ")]
+    [Parameter(ParameterSetName = 'RSA',Mandatory=$false, HelpMessage="Organization of the Certificate Issuer (Default: SharePoint Default Setting)  ")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [string] $Organization ="",
 
     [Alias("City")]
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="Locality of the Certificate Issuer (Default: SharePoint Default Setting) ) ")]
+    [Parameter(ParameterSetName = 'RSA',Mandatory=$false, HelpMessage="Locality of the Certificate Issuer (Default: SharePoint Default Setting) ) ")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [string] $Locality= "",
 
     [Alias("Province")]
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="State of the Certificate Issuer (Default: SharePoint Default Setting) ")]
+    [Parameter(ParameterSetName = 'RSA',Mandatory=$false, HelpMessage="State of the Certificate Issuer (Default: SharePoint Default Setting) ")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [string] $State ="",
 
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="Country of the Certificate Issuer (2-Letter Country Code)")]
+    [Parameter(ParameterSetName = 'RSA',Mandatory=$false, HelpMessage="Country of the Certificate Issuer (2-Letter Country Code)")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [string] $Country= "",
     
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="Certificate key size ( [0|2048|4096|8192|16384] Default: 2048)")]
+    [Parameter(ParameterSetName='RSA',Mandatory=$false, HelpMessage="Certificate key size ( [0|2048|4096|8192|16384] Default: 2048)")]
+    [Parameter(ParameterSetName = 'RenewRSA')]
     [ValidateSet(0,2048,4096,8192,16384)]   
     [int] $KeySize= 0, 
 
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="Encryption Key Algorithm ( [RSA|ECC] Default: RSA) ")]
+    [Parameter(ParameterSetName = 'RSA',Mandatory=$false, HelpMessage="Encryption Key Algorithm ( [RSA|ECC] Default: RSA) ")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [ValidateSet("RSA","ECC")]
     [string] $KeyAlgorithm="",
 
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="Certificate Hash Algorithm ( [Default|SHA256|SHA384|SHA512] Default: SHA256) ")]
+    [Parameter(ParameterSetName="ECC",Mandatory=$false, HelpMessage="Certificate Hash Algorithm ( [Default|SHA256|SHA384|SHA512] Default: SHA256) ")]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [ValidateSet("Default","nistP256","nistP384","nistP521")]
     [string] $EllipticCurve="nistP256",
 
-    [Parameter(ParameterSetName="Run",Mandatory=$false, HelpMessage="Certificate Hash Algorithm ( [Default|SHA256|SHA384|SHA512] Default: SHA256) ")]
+    [Parameter(ParameterSetName = 'RSA',Mandatory=$false, HelpMessage="Certificate Hash Algorithm ( [Default|SHA256|SHA384|SHA512] Default: SHA256) ")]
+    [Parameter(ParameterSetName = 'ECC')]
+    [Parameter(ParameterSetName = 'RenewRSA')]
+    [Parameter(ParameterSetName = 'RenewECC')]
     [ValidateSet("Default","SHA256","SHA384","SHA512")]
     [string] $HashAlgorithm="", 
 
     [Alias("?")]
-    [Parameter(ParameterSetName="help",Mandatory=$false, HelpMessage="Shows this help")]
+    [Parameter(ParameterSetName='help',Mandatory=$false, HelpMessage="Shows this help")]
     [switch] $help
 )
 
 if ($help)
 {
-    Write-Host "This PowerShell script creates SharePoint Certificate request, uses the PowerShell module PSPKI to automatically issue Certificates
-        and installs the certificates into the SharePoint Certificate Store"
-    write-Host""
+    Write-Host "This PowerShell script creates SharePoint Certificate request, `
+uses the PowerShell module PSPKI to automatically issue Certificates `
+and installs the certificates into the SharePoint Certificate Store"
+Write-Host ""
+write-Host "Example:"
+write-Host "GenerateCerts -FriendlyName ContosoSP -CommonName 'SharePoint.Contoso.Local'"
     
 
 
@@ -217,7 +282,7 @@ Import-Module pspki
 
 #region TestCAAccess
 #Connect to CA
-log "Connecting to CA $caname"
+log "Connecting to Certificate Authority $caname"
 
 if (![string]::IsNullOrEmpty($caName))
 {
@@ -231,7 +296,7 @@ if ($ca -eq $null)
 {
     throw ("Cannot connect to Certificate Authority $caName")
 }
-log $("Connected to CA " + $ca.DisplayName)
+log $("Connected to Certificate Authority " + $ca.DisplayName)
 
 #Validate local administrators group membership on CA server
 $CAcomputer = $ca.ComputerName
@@ -251,7 +316,6 @@ If ($members -contains $user) {
 
 $certRequestFileName = Join-Path $env:temp "$FriendlyName.txt"
 $cerFileName = Join-Path  $env:temp "$FriendlyName.cer"
-
 
 
 #region SPDefaultCertSettings
@@ -308,8 +372,24 @@ else
 {
 
 #region NewCertRequest
+
+    $CertRequest = @{
+        FriendlyName = $FriendlyName
+        CommonName = $CommonName 
+        OrganizationalUnit = $OrganizationalUnit
+        Organization = $Organization
+        Locality = $Locality 
+        State = $State 
+        Country = $Country 
+        Exportable = $Exportable 
+        HashAlgorithm = $HashAlgorithm 
+        Path = $certRequestFileName
+        Force = $true
+    }
+
+
+    #Alternate Names
     [string[]]$CertAlternateNames = @();
-    $certRequestTempfile=$env:temp + "\" + $FriendlyName + ".txt"
     if (![string]::IsNullOrEmpty($AlternativeNames))
     {
         if ($AlternativeNames.Contains(";") -or $AlternativeNames.Contains(","))
@@ -321,36 +401,29 @@ else
             $CertAlternateNames = $AlternativeNames
         }
 
-        if ($KeyAlgorithm -eq "RSA")
-        {
+        $certrequest.Add("AlternativeNames",$CertAlternateNames)
+    }
 
-            New-SPCertificate -FriendlyName $FriendlyName  -CommonName $CommonName -OrganizationalUnit $OrganizationalUnit -Organization $Organization -Locality $Locality -State $State `
-                -Country $Country -Exportable:$Exportable -KeySize $KeySize -HashAlgorithm $HashAlgorithm -Path $certRequestFileName -AlternativeNames $CertAlternateNames -Force
-        }
-        else 
-        {
-            New-SPCertificate -FriendlyName $FriendlyName  -CommonName $CommonName -OrganizationalUnit $OrganizationalUnit -Organization $Organization -Locality $Locality -State $State `
-                -Country $Country -Exportable:$Exportable -EllipticCurve $EllipticCurve -HashAlgorithm $HashAlgorithm -Path $certRequestFileName  -AlternativeNames $CertAlternateNames -Force
-        }
-
-    } 
+    #Algorithm
+    if ($KeyAlgorithm -eq "RSA")
+    {
+        $certrequest.Add("KeySize",$KeySize)
+    }
     else 
     {
-        if ($KeyAlgorithm -eq "RSA")
-        {
-            #New-SPCertificate -FriendlyName $FriendlyName -CommonName $CommonName -Path $certRequestFileName
-
-                New-SPCertificate -FriendlyName $FriendlyName  -CommonName $CommonName -OrganizationalUnit $OrganizationalUnit -Organization $Organization -Locality $Locality -State $State `
-                    -Country $Country -Exportable:$Exportable -KeySize $KeySize -HashAlgorithm $HashAlgorithm -Path $certRequestFileName -Force
-        }
-        else 
-        {
-                New-SPCertificate -FriendlyName $FriendlyName  -CommonName $CommonName -OrganizationalUnit $OrganizationalUnit -Organization $Organization -Locality $Locality -State $State `
-                  -Country $Country -Exportable:$Exportable -Path $certRequestFileName -EllipticCurve $EllipticCurve -HashAlgorithm $HashAlgorithm -Force:$force 
-        }
+        $certrequest.Add("EllipticCurve",$EllipticCurve)
     }
-#endregion NewCertRequest
+
+    New-SPCertificate @CertRequest
+    if (Test-Path $certRequestFileName)
+    {
+        Copy-Item -Path $CertRequest.Path $ServerCertFileFolder -Container -Force
+        log "Certificate request file was copied to $ServerCertFileFolder\$Friendlyname.TXT" -f Green
+    }
+
 }
+#endregion NewCertRequest
+
 #endregion PrepareCertRequest
 
 
@@ -401,6 +474,11 @@ if (!(test-path -path $certRequestFileName))
         log "Exporting Certificate to $cerFileName"
         $r= Get-IssuedRequest -RequestID $certResult.InnerObject -CertificationAuthority $ca | Receive-Certificate | Export-Certificate -Type CERT -FilePath "$cerFileName" -Force
         log "Certificate was exported to $cerFileName" -color green
+        if (test-path $cerFileName)
+        {
+            Copy-Item -Force $cerFileName -Destination $ServerCertFileFolder -Container
+            log "Certificate file was copied to $ServerCertFileFolder\$FriendlyName.CER" -f Green
+        }
     } else {
         throw("Certificate could not be exported ")
     }
