@@ -589,7 +589,7 @@ if (Test-Path -LiteralPath $cerFileName)
         }
 
         log "Removing Old Certificate"
-        Remove-SPCertificate -Identity $OldCertID -Confirm:$false
+        Remove-SPCertificate -Identity $OldCertID -Confirm:(!$force)
     }
 
     #clean up
